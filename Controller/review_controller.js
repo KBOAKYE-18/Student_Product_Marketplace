@@ -2,7 +2,8 @@ const Review = require('../Models/review_model');
 
 const add_review = async(req,res)=>{
     try {
-        const {rating,comment,product_id} = req.body;
+        const {rating,comment} = req.body;
+        const product_id = req.params.id;
         const new_review = new Review({
             user:req.user._id,
             product:product_id,
