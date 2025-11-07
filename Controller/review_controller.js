@@ -1,8 +1,19 @@
 const Review = require('../Models/review_model');
+const joi = require('joi');
 
 const add_review = async(req,res)=>{
     try {
-        const {rating,comment} = req.body;
+        const reviewSchema = joi.object({
+            rating:joi.number().min(1).max(5),
+            comment:joi.string()
+        })
+
+        const {error,value} = reviewSchema.validate(req.body);
+        if(error){
+            return res.status(400).json({msg:error.details[0].message});
+        }
+
+        const {rating,comment} = value;
         const product_id = req.params.id;
         const new_review = new Review({
             user:req.user._id,
@@ -12,10 +23,10 @@ const add_review = async(req,res)=>{
         })
 
         await new_review.save();
-        res.status(201).json({msg:'Review Saved successfully'});
+        return res.status(201).json({msg:'Review Saved successfully'});
 
     } catch (error) {
-        res.status(500).json({message:error.message});
+        return res.status(500).json({message:error.message});
     }
 }
 
@@ -25,9 +36,9 @@ const view_reviews = async (req,res)=>{
         .populate('product','name')
         .sort({ createdAt: -1 });  
 
-        res.status(200).json({ reviews });  
+        return res.status(200).json({ reviews });  
     }catch(error){
-        res.status(500).json({msg:error.message});
+        return res.status(500).json({msg:error.message});
     }  
 }
 

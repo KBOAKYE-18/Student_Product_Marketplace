@@ -8,7 +8,8 @@ const product_schema = new Schema({
     category:{type:String,required:true},
     stock:{type:Number},
     image:{type:String},
-    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User'}
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+    isDeleted:{type:Boolean,default:false}
 },{timestamps:true});
 
 

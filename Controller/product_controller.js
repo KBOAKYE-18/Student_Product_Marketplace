@@ -1,8 +1,23 @@
 const Product = require('../Models/product_model');
+const joi = require('joi');
 
 const add_product = async(req,res)=>{
     try {
-        const {name,description,price,category,stock,image} = req.body;
+        const product_schema = joi.object({
+            name:joi.string().required(),
+            description:joi.string().required(),
+            price:joi.number().min(0).required(),
+            category:joi.string().required(),
+            stock:joi.number().min(1).required(),
+            image:joi.string().uri().required()
+        })
+
+        const {error,value} = product_schema.validate(req.body,{ stripUnknown: true });
+        if(error){
+            return res.status(400).json({msg:error.details[0].message});
+        }
+
+        const {name,description,price,category,stock,image} = value;
         const new_product = new Product({
             name:name,
             description:description,
@@ -10,62 +25,99 @@ const add_product = async(req,res)=>{
             category:category,
             stock:stock,
             image:image,
-            seller:req.user._id
+            seller:req.user.id
         })
 
+        
+
         await new_product.save();
-        res.status(201).json({msg:'Product Saved successfully'});
+        return res.status(201).json({msg:'Product Saved successfully'});
 
     } catch (error) {
-        res.status(500).json({message:error.message});
+        return res.status(500).json({message:error.message});
     }
 }
 
 const update_product = async(req,res) =>{
     try{
-        const {price,stock,image} = req.body;
-        const productID = req.params.id;
+        const product_schema = joi.object({
+            price:joi.number().min(0),
+            stock:joi.number().min(1),
+            image:joi.string()
+        })
 
+        const {error,value} = product_schema.validate(req.body);
+        if(error){
+            return res.status(400).json({msg:error.details[0].message});
+        }
+
+        const {price,stock,image} = value;
+       
+        const schema = joi.object({
+            id:joi.string().length(24).hex().required()
+        })
+
+        const {err,val} = schema.validate(req.params);
+        if(err){
+            return res.status(400).json({ msg:err.details[0].message});
+        }
+
+        const {id} = val;
+        
         const updates = {};
         if (price !== undefined) updates.price = price;
         if (stock !== undefined) updates.stock = stock;
         if (image !== undefined) updates.image = image;
 
         const updateProduct = await Product.updateOne(
-            { _id: productID },
+            { _id:id },
             {$set:updates}
         );
 
         if(updateProduct.matchedCount > 0){
             if(updateProduct.modifiedCount > 0){
-                res.status(200).json({msg:"Product updated successfully"});
+                return res.status(200).json({msg:"Product updated successfully"});
             }else{
-                res.status(200).json({msg:"Product update failed"});
+                return  res.status(200).json({msg:"Product update failed"});
             }
         }else{
-            res.status(404).json({msg:"Product was not found for update"});
+            return res.status(404).json({msg:"Product was not found for update"});
         }
 
         
     }catch(error){
-        res.status(500).json({msg:error.message});
+        return res.status(500).json({msg:error.message});
     }
 }
 
 const delete_product = async(req,res)=>{
     try{
-        const product_id = req.params.id;
-        const deleteProduct = await Product.deleteOne(
-            {_id:product_id}
-        );
+        const schema = joi.object({
+            product_id:joi.string().length(24).hex().required()
+        })
 
-        if(deleteProduct.deletedCount > 0){
-            res.status(200).json({msg:"Product deleted successfully"});
-        }else{
-            res.status(404).json({msg:"Product not found ,delete operation failed"});
+        const {error,value} = schema.validate(req.params);
+        if(error){
+            return res.status(400).json({ msg:error.details[0].message });
         }
+
+        const {product_id} = value;
+        const product = await Product.findOne({
+            _id:product_id,
+            seller:req.user.id
+        })
+
+        if(!product){
+            return res.status(403).json({msg:"You cannot delete this product"});
+        }
+
+        product.isDeleted = true;
+        await product.save();
+
+        return res.status(200).json({msg:"Product deleted successfully"});
+        
     }catch(error){
-        res.status(500).json({msg:error.message});
+        return res.status(500).json({msg:error.message});
     }
     
 }
@@ -74,46 +126,62 @@ const list_products = async(req,res) =>{
     try{
         const all_products = await Product.find().populate('seller','name email');
         if(all_products.length > 0){
-            res.status(200).json({produtcs:all_products});
+            return res.status(200).json({produtcs:all_products});
         }else{
-            res.status(200).json({products:[],msg:"No products available"});
+            return res.status(200).json({products:[],msg:"No products available"});
         }
     }catch(error){
-        res.status(500).json({msg:error.message});
+       return res.status(500).json({msg:error.message});
     }
 }
 
 const get_product_id = async(req,res)=>{
     try{
-        const product_id = req.params.id;
-        const get_product = await Product.findById(product_id).populate('seller','name email');
+        const schema = joi.object({
+            id:joi.string().length(24).hex().required()
+        })
+
+        const {error,value} = schema.validate(req.params);
+        if(error){
+            return res.status(400).json({ msg:error.details[0].message });
+        }
+
+        const {id} = value;
+
+        const get_product = await Product.findById(id).populate('seller','name email');
         if(get_product){
-            res.status(200).json({product:get_product,msg:"Product found"})
+            return res.status(200).json({product:get_product,msg:"Product found"})
         }else{
-            res.status(404).json({msg:"Product was not found"});
+            return res.status(404).json({msg:"Product was not found"});
         }
     }catch(error){
-        res.status(500).json({msg:error.message})
+       return res.status(500).json({msg:error.message})
     }
 }
 
 const get_product_by_category = async (req,res)=>{
     try{
-        const {category} = req.params;
 
-        if (!category) {
-            return res.status(400).json({ msg: "Category is required" });
+        const schema = joi.object({
+            category:joi.string().length(24).hex().required()
+        })
+
+        const {error,value} = schema.validate(req.params);
+        if(error){
+            return res.status(400).json({ msg:error.details[0].message });
         }
+
+        const {category} = value;
 
         const products = await Product.find({category}).populate('seller','name email');
 
         if (products.length > 0) {
-            res.status(200).json({ products });
+          return  res.status(200).json({ products });
         } else {
-            res.status(200).json({ products: [], msg: "No products found in this category" });
+          return  res.status(200).json({ products: [], msg: "No products found in this category" });
         }
     }catch(error){
-        res.status(500).json({msg:error.message})
+       return res.status(500).json({msg:error.message})
     }
 }
 

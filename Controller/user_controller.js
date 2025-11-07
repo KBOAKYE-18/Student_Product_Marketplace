@@ -1,11 +1,30 @@
 const bcrypt = require('bcryptjs');
+const joi = require('joi');
 const User = require('../Models/user_model');
 const jwt = require('jsonwebtoken');
 
 
 const add_user = async (req,res)=>{
     try {
-        const {name,email,password,role} = req.body;
+      
+        const authSchema = joi.object({
+            name:joi.string().required(),
+            email:joi.string().email().required(),
+            password:joi.string()
+                    .pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])'))
+                    .min(6)
+                    .required(),
+            role:joi.string().required()
+                
+        })
+
+        const {error,value} = authSchema.validate(req.body,{ stripUnknown: true });
+        if(error){
+            return res.status(400).json({msg:error.details[0].message});
+        }
+
+        const {name,email,password,role} = value;
+       
         
         const existingUser = await User.findOne({email});
         if(existingUser){
@@ -17,20 +36,30 @@ const add_user = async (req,res)=>{
         
         await new_user.save();
         console.log('User saved successfully');
-        res.status(201).json({message:"User saved Successfully"});
+        return res.status(201).json({message:"User saved Successfully"});
    
     } catch (error) {
-        res.status(400).json({message:error.message});
+       return res.status(400).json({message:error.message});
     }
 }
 
 const login_user = async (req,res)=>{
     try {
-        const {email,password} = req.body;
+        const loginSchema = joi.object({
+            email:joi.string().email().required(),
+            password:joi.string().required() 
+        })
+
+        const {error,value} = loginSchema.validate(req.body);
+        if(error){
+            return res.status(400).json({msg:error.details[0].message});
+        }
+
+        const {email,password} = value;
         
         const existingUser = await User.findOne({email});
         if(!existingUser){
-            res.status(400).json({msg:'User does not exist'});
+           return res.status(400).json({msg:'User does not exist'});
         }
 
         const isMatch = await bcrypt.compare(password, existingUser.password);
@@ -57,16 +86,16 @@ const login_user = async (req,res)=>{
 
 
     } catch (error) {
-        res.send(500).json({msg:error});
+       return res.status(500).json({msg:error});
     }
 }
 
 const delete_user = async (req,res)=>{
     try{
         await User.findByIdAndDelete(req.user._id);
-        res.status(201).json({message:"Account deleted Successfully"});
+        return res.status(201).json({message:"Account deleted Successfully"});
     }catch(error){
-        res.status(500).json({message:error.message});
+        return res.status(500).json({message:error.message});
     }
 }
 
