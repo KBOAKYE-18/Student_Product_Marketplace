@@ -1,7 +1,7 @@
 # Student_Product_Marketplace
 
-A full-stack web application that allows students to buy and sell products within their school community.  
-The platform makes it easy for students to list items (like books, clothes, electronics), browse available products, and securely manage purchases.
+A Restful API that allows students to sellers to register , uplaod products and manage orders and reviews.  
+
 
 
 
@@ -33,10 +33,9 @@ The platform makes it easy for students to list items (like books, clothes, elec
 
 | Layer | Technologies |
 |------|--------------|
-| **Frontend** | HTML, CSS, JavaScript  |
 | **Backend** | Node.js, Express.js |
 | **Database** | MongoDB & Mongoose |
-| **Auth** | JWT (JSON Web Tokens), bcrypt |
+| **Auth** | JWT (JSON Web Tokens),Joi, bcrypt |
 | **Tools** | Postman, Git, GitHub |
 
 

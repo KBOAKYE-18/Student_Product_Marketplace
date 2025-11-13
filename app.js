@@ -9,19 +9,31 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-const dbURI = `mongodb+srv://boakyeemmanueleinstein_db_user:${process.env.DB_PASSWORD}@cluster1.qco0fdf.mongodb.net/?appName=cluster1`;
-mongoose.connect(dbURI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch(err => console.log("DB connection error:", err));
+const connect_DB = async ()=>{
+  try {
+    const dbURI = `mongodb+srv://boakyeemmanueleinstein_db_user:${process.env.DB_PASSWORD}@cluster1.qco0fdf.mongodb.net/?appName=cluster1`;
+    await mongoose.connect(dbURI);
+    console.log("Connected to MongoDB");
+
+    app.use('/',Routes);
+
+    app.listen(3000,()=>{
+      console.log('Server is running');
+    });
+
+  } catch (error) {
+    console.log(`Error message:${error}`);
+    process.exit(1);
+  }
+  
+  
+}
 
 
 
 
-app.use('/',Routes);
 
-app.listen(3000,()=>{
-  console.log('Server is running');
-});
+
 
 
 
