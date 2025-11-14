@@ -29,6 +29,7 @@ const connect_DB = async ()=>{
   
 }
 
+connect_DB();
 
 
 

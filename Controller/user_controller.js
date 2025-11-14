@@ -92,7 +92,8 @@ const login_user = async (req,res)=>{
 
 const delete_user = async (req,res)=>{
     try{
-        await User.findByIdAndDelete(req.user._id);
+        
+        await User.findByIdAndDelete(req.user.id);
         return res.status(201).json({message:"Account deleted Successfully"});
     }catch(error){
         return res.status(500).json({message:error.message});

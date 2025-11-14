@@ -14,9 +14,10 @@ const add_review = async(req,res)=>{
         }
 
         const {rating,comment} = value;
-        const product_id = req.params.id;
+        const product_id = req.params.product_id;
+        
         const new_review = new Review({
-            user:req.user._id,
+            user:req.user.id,
             product:product_id,
             rating:rating,
             comment:comment

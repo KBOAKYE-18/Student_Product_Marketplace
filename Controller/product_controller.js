@@ -57,12 +57,14 @@ const update_product = async(req,res) =>{
             id:joi.string().length(24).hex().required()
         })
 
-        const {err,val} = schema.validate(req.params);
-        if(err){
+        
+        const {error:paramError,value:paramValue} = schema.validate(req.params);
+        if(paramError){
             return res.status(400).json({ msg:err.details[0].message});
         }
 
-        const {id} = val;
+        const {id} = paramValue;
+        
         
         const updates = {};
         if (price !== undefined) updates.price = price;
@@ -70,7 +72,7 @@ const update_product = async(req,res) =>{
         if (image !== undefined) updates.image = image;
 
         const updateProduct = await Product.updateOne(
-            { _id:id },
+            { _id:id},
             {$set:updates}
         );
 
@@ -93,17 +95,21 @@ const update_product = async(req,res) =>{
 const delete_product = async(req,res)=>{
     try{
         const schema = joi.object({
-            product_id:joi.string().length(24).hex().required()
+            id:joi.string().length(24).hex().required() //Property name should match the field to validate
         })
 
+        console.log(req.params);
         const {error,value} = schema.validate(req.params);
         if(error){
             return res.status(400).json({ msg:error.details[0].message });
         }
 
-        const {product_id} = value;
+       
+        const {id} = value;
+       
+
         const product = await Product.findOne({
-            _id:product_id,
+            _id:id,
             seller:req.user.id
         })
 
@@ -124,9 +130,19 @@ const delete_product = async(req,res)=>{
 
 const list_products = async(req,res) =>{
     try{
+
         const all_products = await Product.find().populate('seller','name email');
-        if(all_products.length > 0){
-            return res.status(200).json({produtcs:all_products});
+        const product_available = [];
+
+        all_products.forEach(product => {
+            if(product.isDeleted === false){
+                product_available.push(product);
+            }
+        });
+
+        
+        if(product_available.length > 0){
+            return res.status(200).json({produtcs:product_available});
         }else{
             return res.status(200).json({products:[],msg:"No products available"});
         }
@@ -143,7 +159,7 @@ const get_product_id = async(req,res)=>{
 
         const {error,value} = schema.validate(req.params);
         if(error){
-            return res.status(400).json({ msg:error.details[0].message });
+            return res.status(400).json({msg:error.details[0].message });
         }
 
         const {id} = value;
@@ -163,20 +179,28 @@ const get_product_by_category = async (req,res)=>{
     try{
 
         const schema = joi.object({
-            category:joi.string().length(24).hex().required()
+            category:joi.string().required()
         })
+
+        console.log(req.params);
 
         const {error,value} = schema.validate(req.params);
         if(error){
-            return res.status(400).json({ msg:error.details[0].message });
+            return res.status(400).json({msg:error.details[0].message });
         }
 
         const {category} = value;
 
         const products = await Product.find({category}).populate('seller','name email');
-
-        if (products.length > 0) {
-          return  res.status(200).json({ products });
+        const product_available = [];
+        products.forEach(product => {
+            if(product.isDeleted === false){
+                product_available.push(product);
+            }
+        });
+        
+        if (product_available.length > 0) {
+          return  res.status(200).json({ product_available });
         } else {
           return  res.status(200).json({ products: [], msg: "No products found in this category" });
         }
