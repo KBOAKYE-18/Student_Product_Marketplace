@@ -73,15 +73,15 @@ const login_user = async (req,res)=>{
             { expiresIn: '3d' } 
         );
 
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: {
-                name: existingUser.name,
-                email: existingUser.email,
-                role: existingUser.role,
-            }
-        });
+        return res.status(200).json({
+                    message: "Login successful",
+                     token,
+                    user:{
+                        name: existingUser.name,
+                        email: existingUser.email,
+                        role: existingUser.role,
+                    }
+                });
 
 
 
